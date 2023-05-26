@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
     def start_server(self):
         host, port, folder = self.form.valid()
         try:
-            self.server = WebServer(host, int(port), folder)
+            self.server = WebServer(host, int(port), folder, self)
             self.server.start()
             self.app.aboutToQuit.connect(self.server.shutdown)
         except Exception as e:
@@ -42,8 +42,6 @@ class MainWindow(QMainWindow):
             self.form.address_inp.setDisabled(True)
             self.form.port_inp.setDisabled(True)
             self.form.browse_btn.setDisabled(True)
-            self.log(f'Server started at http://{host}:{port}')
-            self.setWindowTitle("LNReader: Remote service (started)")
 
     def log(self, message):
         self.view.text.insertHtml(f'<p>{message}</p><br>')

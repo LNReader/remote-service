@@ -4,7 +4,6 @@ import json
 def backup(json_obj):
     pass
 
-
 def restore(data):
     pass
 

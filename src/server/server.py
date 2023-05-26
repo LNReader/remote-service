@@ -36,10 +36,12 @@ class ServerHandler(BaseHTTPRequestHandler):
         self.end_headers()
   
 class WebServer(threading.Thread):
-    def __init__(self, host, port, app_dir):
+    def __init__(self, host, port, app_dir, parent):
         super().__init__()
         self.host = host
         self.port = port
+        self.parent = parent
+        self.log = parent.log
         self.backup_dir = os.path.join(app_dir, 'Backup')
         self.images_dir = os.path.join(self.backup_dir, 'Images')
         self.data_dir = os.path.join(self.backup_dir, 'Data')
@@ -47,6 +49,8 @@ class WebServer(threading.Thread):
         os.makedirs(self.images_dir, exist_ok=True)
         os.makedirs(self.data_dir, exist_ok=True)
         self.server = HTTPServer((self.host, self.port), ServerHandler)
+        self.log(f'Server started at http://{host}:{port}')
+        self.parent.setWindowTitle("LNReader: Remote service (started)")
 
     def run(self):
         self.server.serve_forever()
@@ -57,3 +61,6 @@ class WebServer(threading.Thread):
         self.server.__shutdown_request = True
         self.server.shutdown()
         self.server.server_close()
+    
+    def log(message: str):
+        raise NotImplementedError()
