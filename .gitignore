@@ -16,9 +16,13 @@ ENV/
 env.bak/
 venv.bak/
 
-#statics
+# statics
 media/
 /static
 
-#vscode
+# vscode
 .vscode
+
+# build
+build/
+dist/
