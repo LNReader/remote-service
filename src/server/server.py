@@ -36,12 +36,16 @@ class ServerHandler(BaseHTTPRequestHandler):
         self.end_headers()
   
 class WebServer(threading.Thread):
-    def __init__(self, host, port, backup_dir):
+    def __init__(self, host, port, app_dir):
         super().__init__()
         self.host = host
         self.port = port
-        self.backup_dir = os.path.join(backup_dir, 'LNReader')
+        self.backup_dir = os.path.join(app_dir, 'Backup')
+        self.images_dir = os.path.join(self.backup_dir, 'Images')
+        self.data_dir = os.path.join(self.backup_dir, 'Data')
         os.makedirs(self.backup_dir, exist_ok=True)
+        os.makedirs(self.images_dir, exist_ok=True)
+        os.makedirs(self.data_dir, exist_ok=True)
         self.server = HTTPServer((self.host, self.port), ServerHandler)
 
     def run(self):
