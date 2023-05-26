@@ -18,7 +18,6 @@ venv.bak/
 
 # statics
 media/
-/static
 
 # vscode
 .vscode
