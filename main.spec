@@ -3,12 +3,15 @@
 
 block_cipher = None
 
+added_files = [
+    ( './static', 'static'),
+]
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=added_files,
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -36,6 +39,7 @@ exe = EXE(
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,
+    icon='./static/images/icon.ico',
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

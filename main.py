@@ -12,13 +12,15 @@ from src.server.server import WebServer
 from src.components.form import Form
 from src.components.view import View
 
+BASE_DIR = os.path.dirname(__file__)
+
 class MainWindow(QMainWindow):
     def __init__(self, app: QApplication):
         super().__init__()
         self.app = app
         self._width = 720
         self._height = 480
-        self.setWindowIcon(QIcon('static/images/ico.png'))
+        self.setWindowIcon(QIcon(os.path.join(BASE_DIR, 'static/images/icon.png')))
         self.setWindowTitle("LNReader: Remote service (not started)")
         self.setFixedSize(QSize(self._width, self._height))
         self.load_config()
@@ -46,8 +48,12 @@ class MainWindow(QMainWindow):
     def log(self, message):
         self.view.text.insertHtml(f'<p>{message}</p><br>')
 
+    # %user_dir%/.LNReader/config.json
     def load_config(self):
-        self.config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+        self.config_dir = os.path.join(os.path.expanduser('~'), '.LNReader')
+        if not os.path.exists(self.config_dir):
+            os.mkdir(self.config_dir)
+        self.config_path = os.path.join(os.path.expanduser('~'), '.LNReader', 'config.json')
         if not os.path.exists(self.config_path):
             with open(self.config_path, 'w') as f:
                 f.write(json.dumps({}))
@@ -84,7 +90,7 @@ theme = {
     'onSurfaceDisabled': 'rgba(27, 27, 31, 0.38)',
 }
 
-with open('static/styles/styles.qss', 'r') as f:
+with open(os.path.join(BASE_DIR, 'static/styles/styles.qss'), 'r') as f:
     styles = f.read()
     for attribute in theme:
         styles = styles.replace(f'-{attribute}-', theme[attribute])
