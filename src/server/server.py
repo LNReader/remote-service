@@ -21,6 +21,7 @@ class ServerHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         handler = map_handler.get(self.path)
+        res = {'error': True, 'message': 'Bad request'}
         if not handler:
             self.send_response(400)
         else: 
@@ -28,29 +29,32 @@ class ServerHandler(BaseHTTPRequestHandler):
             try:
                 post_body = self.rfile.read(content_len)
                 json_obj = json.loads(post_body)
-                handler(json_obj)
+                res = handler(self.webserver, json_obj)
                 self.send_response(200)
-            except:
+            except Exception as e:
+                self.webserver.window.log(str(e))
+                res['message'] = str(e)
                 self.send_response(400) 
         self.send_header("Content-type", "application/json")
         self.end_headers()
-  
+        self.wfile.write(bytes(json.dumps(res), "utf-8"))
+
+class CustomHTTPServer(HTTPServer):
+    def __init__(self, webserver, server_address, RequestHandlerClass, bind_and_activate: bool = True) -> None:
+        super().__init__(server_address, RequestHandlerClass, bind_and_activate)
+        self.RequestHandlerClass.webserver = webserver
+
 class WebServer(threading.Thread):
-    def __init__(self, host, port, app_dir, parent):
+    def __init__(self, host, port, app_dir, window):
         super().__init__()
         self.host = host
         self.port = port
-        self.parent = parent
-        self.log = parent.log
         self.backup_dir = os.path.join(app_dir, 'Backup')
-        self.images_dir = os.path.join(self.backup_dir, 'Images')
-        self.data_dir = os.path.join(self.backup_dir, 'Data')
         os.makedirs(self.backup_dir, exist_ok=True)
-        os.makedirs(self.images_dir, exist_ok=True)
-        os.makedirs(self.data_dir, exist_ok=True)
-        self.server = HTTPServer((self.host, self.port), ServerHandler)
-        self.log(f'Server started at http://{host}:{port}')
-        self.parent.setWindowTitle("LNReader: Remote service (started)")
+        self.window = window
+        self.server = CustomHTTPServer(self, (self.host, self.port), ServerHandler)
+        self.window.log(f'Server started at http://{host}:{port}')
+        self.window.setWindowTitle("LNReader: Remote service (started)")
 
     def run(self):
         self.server.serve_forever()
@@ -61,6 +65,4 @@ class WebServer(threading.Thread):
         self.server.__shutdown_request = True
         self.server.shutdown()
         self.server.server_close()
-    
-    def log(message: str):
-        raise NotImplementedError()
+
