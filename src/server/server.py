@@ -2,6 +2,7 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
 import os
+from typing import Any
 
 from .backup import backup, restore, old_backup, old_restore
 
@@ -11,6 +12,7 @@ map_handler = {
     '/old_backup': old_backup,
     '/old_restore': old_restore,
 }
+
 
 class ServerHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -38,11 +40,16 @@ class ServerHandler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "application/json")
         self.end_headers()
         self.wfile.write(bytes(json.dumps(res), "utf-8"))
+    
+    def log_message(self, format: str, *args: Any) -> None:
+        return
+
 
 class CustomHTTPServer(HTTPServer):
     def __init__(self, webserver, server_address, RequestHandlerClass, bind_and_activate: bool = True) -> None:
         super().__init__(server_address, RequestHandlerClass, bind_and_activate)
         self.RequestHandlerClass.webserver = webserver
+
 
 class WebServer(threading.Thread):
     def __init__(self, host, port, app_dir, window):
