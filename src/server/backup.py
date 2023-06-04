@@ -9,7 +9,10 @@ class RequestPackage:
         self.type = json_obj.get('type')
         self.content = json_obj.get('content')
         self.encode = json_obj.get('encode')    # None or base64
-        self.path = os.path.join(backup_dir, self.relative_path)
+        if self.encode == 'base64':
+            self.path = os.path.join(backup_dir, 'Images', json_obj.get('relative_path'))
+        else:
+            self.path = os.path.join(backup_dir, 'Data', json_obj.get('relative_path'))
         self.dir = os.path.dirname(self.path)
 
     def __str__(self) -> str:
@@ -22,8 +25,9 @@ def backup(webserver, json_obj):
         with open(request.path, 'wb') as f:
             f.write(base64.b64decode(request.content))
     else:
-        with open(request.path, 'w') as f:
-            f.write(json.dumps(request.content))
+        with open(request.path, 'w', encoding='utf-8') as f:
+            f.write(json.dumps(request.content, ensure_ascii=False))
+    webserver.window.log(f'{request.type}: {request.path}')
     return {"success": True, "message": "ok"}
 
 def restore(webserver, json_obj):
