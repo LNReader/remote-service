@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import (
 import os
 import json
 
-from src.server.server import WebServer
+from src.server.server import WebSocketServer
 from src.components.form import Form
 from src.components.view import View
 
@@ -32,7 +32,7 @@ class MainWindow(QMainWindow):
     def start_server(self):
         host, port, folder = self.form.valid()
         try:
-            self.server = WebServer(host, int(port), folder, self)
+            self.server = WebSocketServer(host, int(port), folder, self)
             self.server.start()
             self.app.aboutToQuit.connect(self.server.shutdown)
         except Exception as e:

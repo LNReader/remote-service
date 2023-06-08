@@ -6,7 +6,8 @@ import os
 def getIP():
     output = check_output(["ipconfig"], text=True)
     regex = re.compile(r'Wi-Fi:[^%]+%[\d]+[^:]+: ([\d\.]+)')
-    return regex.search(output).group(1)
+    result = regex.search(output)
+    return result.group(1) if result else 'localhost'
 
 class Form(QtWidgets.QWidget):
     def __init__(self, parent, x, y, w, h) -> None:
