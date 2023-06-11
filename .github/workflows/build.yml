@@ -28,11 +28,11 @@ jobs:
     - name: Build exe
       run: pyinstaller main.spec 
     - name: Set Env
-        run: |
-          set -x
-          echo "COMMIT_COUNT=$(git rev-list --count HEAD)" >> $GITHUB_ENV
+      run: |
+        set -x
+        echo "COMMIT_COUNT=$(git rev-list --count HEAD)" >> $GITHUB_ENV
     - name: Upload Artifact
-        uses: actions/upload-artifact@v1
-        with:
-          name: LNReaderRS-r${{ env.COMMIT_COUNT }}
-          path: dist/LNReaderRS.exe
+      uses: actions/upload-artifact@v1
+      with:
+        name: LNReaderRS-r${{ env.COMMIT_COUNT }}
+        path: dist/LNReaderRS.exe
