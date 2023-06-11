@@ -1,0 +1,32 @@
+name: build exe
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: windows-latest
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: pip-${{ runner.os }}-${{ secrets.CACHE_VERSION }}-${{ hashFiles('requirements.txt') }}
+    - name: Install dependencies
+      run: pip install -r requirement.txt
+    - name: Build exe
+      run: pyinstaller main.spec 
+    - name: Set Env
+        run: |
+          set -x
+          echo "COMMIT_COUNT=$(git rev-list --count HEAD)" >> $GITHUB_ENV
+    - name: Upload Artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: LNReaderRS-r${{ env.COMMIT_COUNT }}
+          path: dist/LNReaderRS.exe
