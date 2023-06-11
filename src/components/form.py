@@ -3,12 +3,6 @@ from subprocess import check_output
 import re
 import os
 
-def getIP():
-    output = check_output(["ipconfig"], text=True)
-    regex = re.compile(r'Wi-Fi:[^%]+%[\d]+[^:]+: ([\d\.]+)')
-    result = regex.search(output)
-    return result.group(1) if result else 'localhost'
-
 class Form(QtWidgets.QWidget):
     def __init__(self, parent, x, y, w, h) -> None:
         super().__init__(parent)
@@ -50,7 +44,6 @@ class Form(QtWidgets.QWidget):
         self.start_btn.setText("Start")
         self.start_btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
 
-        self.address_inp.setText(getIP())
         self.port_inp.setText("8000")
         if self.parent().config.get("folder"):
             self.folder_inp.setText(self.parent().config.get("folder"))
