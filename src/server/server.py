@@ -11,7 +11,7 @@ class WebSocketServer(threading.Thread, BackupHandler):
         super().__init__()
         self.host = host
         self.port = port
-        self.backup_dir = os.path.join(app_dir, 'Backup')
+        self.backup_dir = os.path.join(app_dir, 'Backup').replace('\\', '/')
         os.makedirs(self.backup_dir, exist_ok=True)
         self.window = window
 

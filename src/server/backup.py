@@ -8,19 +8,19 @@ class BackupRequestPackage:
         self.content = json_obj.get('content')
         self.encoding = json_obj.get('encoding')    # None, base64, utf-8
         if self.encoding == 'base64':
-            self.path = os.path.join(backup_dir, 'Images', json_obj.get('relative_path'))
+            self.path = slash_join(backup_dir, 'Images', json_obj.get('relative_path'))
         else:
-            self.path = os.path.join(backup_dir, 'Data', json_obj.get('relative_path'))
+            self.path = slash_join(backup_dir, 'Data', json_obj.get('relative_path'))
         self.dir = os.path.dirname(self.path)
 
     def __str__(self) -> str:
         return self.task
 
 class RestoreResponsePackage:
-    def __init__(self, metadata, total) -> None:
+    def __init__(self, metadata, total, backup_dir) -> None:
         self.total = total
         self.type = metadata.get('type')
-        self.real_path = metadata.get('real_path')
+        self.real_path = slash_join(backup_dir, metadata.get('suffix_path'))
         self.encoding = None
         self.relative_path = None
         if metadata.get('encoding'):
@@ -47,6 +47,13 @@ class RestoreResponsePackage:
            'total': self.total,
         }
 
+def slash_join(_arg: str, *args: str):
+    res = _arg.replace('\\', '/').removesuffix('/')
+    for arg in args:
+        arg = arg.replace('\\', '/').removeprefix('/')
+        res = (res + '/' + arg).removesuffix('/')
+    return res
+
 class BackupHandler:
     def backup(self, json_obj):
         request = BackupRequestPackage(self.backup_dir, json_obj)
@@ -69,7 +76,7 @@ class BackupHandler:
             self.window.log('Restore successfully')
             return
         index = int(json_obj.get('index'))
-        res = RestoreResponsePackage(self.meta[index], len(self.meta))
+        res = RestoreResponsePackage(self.meta[index], len(self.meta), self.backup_dir)
         self.window.log(f'<span style="color: rgb(170, 241, 175);">{res.type}</span>: {res.real_path}')
         return res.toJson()
 
@@ -78,64 +85,43 @@ class BackupHandler:
 
     def metadata(self):
         meta = []
-        path = {
-            'Novel': os.path.join(self.backup_dir, 'Data', 'Novel.json'),
-            'Category': os.path.join(self.backup_dir, 'Data', 'Category.json'),
-            'NovelCategory': os.path.join(self.backup_dir, 'Data', 'NovelCategory.json'),
-            'Setting': os.path.join(self.backup_dir, 'Data', 'Setting.json'),
-            'Chapter': os.path.join(self.backup_dir, 'Data', 'Chapters'),
-            'Download': os.path.join(self.backup_dir, 'Data', 'Downloads'),
-            'Plugin': os.path.join(self.backup_dir, 'Data', 'Plugins'),
-            'Image': os.path.join(self.backup_dir, 'Images'),
-            'Theme': os.path.join(self.backup_dir, 'Data', 'Theme.json')
+        paths = {
+            'Novel': (slash_join(self.backup_dir, 'Data', 'Novel.json'), None),
+            'Category': (slash_join(self.backup_dir, 'Data', 'Category.json'), None),
+            'NovelCategory': (slash_join(self.backup_dir, 'Data', 'NovelCategory.json'), None),
+            'Setting': (slash_join(self.backup_dir, 'Data', 'Setting.json'), None),
+            'Chapter': (slash_join(self.backup_dir, 'Data', 'Chapters'), None),
+            'Download': (slash_join(self.backup_dir, 'Data', 'Downloads'), 'utf-8'),
+            'Plugin': (slash_join(self.backup_dir, 'Data', 'Plugins'), 'utf-8'),
+            'Image': (slash_join(self.backup_dir, 'Images'), 'base64'),
+            'Theme':(slash_join(self.backup_dir, 'Data', 'Theme.json'), None)
         }
 
         def walk(path: str, root: str):
             if os.path.isfile(path):
-                yield path.removeprefix(root + '\\').replace('\\', '/')
+                yield (path.removeprefix(root + '/'), 
+                       path.removeprefix(self.backup_dir + '/'))
                 return
             for item in os.scandir(path):
-                for path in walk(item.path, root):
+                for path in walk(item.path.replace('\\', '/'), root):
                     yield path
 
-        for type in ['Category', 'Novel', 'NovelCategory', 'Theme']:
-            meta.append({
-                'type': type,
-                'real_path': path[type]
-            })
-        if os.path.exists(path['Chapter']):
-            for _path in walk(path['Chapter'], path['Chapter']):
-                meta.append({
-                    'type': 'Chapter',
-                    'real_path': os.path.join(path['Chapter'], _path)
-                })
-        
-        for type in ['Download', 'Plugin']:
-            if os.path.exists(path[type]):
-                for _path in walk(path[type], path[type]):
-                    meta.append({
+        for type in paths:
+            path, encoding = paths[type]
+            if os.path.exists(path):
+                for realative_path, suffix_path in walk(path, path):
+                    item = {
                         'type': type,
-                        'encoding': 'utf-8',
-                        'relative_path': _path,
-                        'real_path': os.path.join(path[type], _path)
-                    })
-        if os.path.exists(path['Image']):
-            for _path in walk(path['Image'], path['Image']):
-                meta.append({
-                    'type': 'Image',
-                    'encoding': 'base64',
-                    'relative_path': _path,
-                    'real_path': os.path.join(path['Image'], _path)
-                })
+                        'suffix_path': suffix_path
+                    }
+                    if encoding:
+                        item['encoding'] = encoding
+                        item['relative_path'] = realative_path
+                    meta.append(item)
 
-        meta.append({
-            'type': 'Setting',
-            'real_path': path['Setting']
-        })
-        
-        meta_file = os.path.join(self.backup_dir, 'metadata.json')
+        meta_file = slash_join(self.backup_dir, 'metadata.json')
 
         with open(meta_file, 'w', encoding='utf-8') as f:
             f.write(json.dumps(meta, ensure_ascii=False))
-        self.window.log('Backup successfully!')
         self.get_metadata()
+        self.window.log('Backup successfully!')
