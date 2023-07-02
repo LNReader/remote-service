@@ -31,20 +31,19 @@ class MainWindow(QMainWindow):
     
     def start_server(self):
         host, port, folder = self.form.valid()
-        try:
-            self.server = WebSocketServer(host, int(port), folder, self)
-            self.server.start()
-            self.app.aboutToQuit.connect(self.server.shutdown)
-        except Exception as e:
-            self.log(e)
-        else:
-            self.form.start_btn.setDisabled(True)
-            self.form.address_inp.setDisabled(True)
-            self.form.port_inp.setDisabled(True)
-            self.form.browse_btn.setDisabled(True)
+
+        self.server = WebSocketServer(host, int(port), folder, self)
+        self.server.start()
+        self.app.aboutToQuit.connect(self.server.shutdown)
+        
+        self.form.start_btn.setDisabled(True)
+        self.form.address_inp.setDisabled(True)
+        self.form.port_inp.setDisabled(True)
+        self.form.browse_btn.setDisabled(True)
 
     def log(self, message):
         self.view.text.insertHtml(f'<p>{message}</p><br>')
+        self.view.text.verticalScrollBar().setValue(self.view.text.verticalScrollBar().maximum())
 
     # %user_dir%/.LNReader/config.json
     def load_config(self):

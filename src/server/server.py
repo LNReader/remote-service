@@ -31,31 +31,37 @@ class WebSocketServer(threading.Thread, BackupHandler):
                 self.meta = json.loads(f.read())
 
     async def handler(self, websocket):
-        async for message in websocket:
-            json_obj = json.loads(message)
-            handler_type = json_obj.get('type')
-            handler = self.map_handler.get(handler_type)
-            if handler:
-                if handler_type == 'Metadata':
-                    handler()
-                    res = None
+        try:
+            async for message in websocket:
+                json_obj = json.loads(message)
+                handler_type = json_obj.get('type')
+                handler = self.map_handler.get(handler_type)
+                if handler:
+                    if handler_type == 'Metadata':
+                        handler()
+                        res = None
+                    else:
+                        res = handler(json_obj.get('data'))
                 else:
-                    res = handler(json_obj.get('data'))
-            else:
-                res = {
-                    "success": False,
-                    "message": "Unsupported handler"
-                }
-            if res: await websocket.send(json.dumps(res))
-    
+                    res = {
+                        "success": False,
+                        "message": "Unsupported handler"
+                    }
+                if res: await websocket.send(json.dumps(res))
+        except Exception as e:
+            self.window.log(e)
+            self.shutdown()
+
     async def forever(self):
-        async with websockets.serve(self.handler, self.host, self.port):
+        async with websockets.serve(self.handler, self.host, self.port, max_size=2**24):
             self.window.log(f'Server started at ws://{self.host}:{self.port}')
             self.window.setWindowTitle("LNReader: Remote service (started)")
             await asyncio.Future()
 
     def run(self):
         asyncio.run(self.forever())
-    
+
     def shutdown(self):
+        self.window.log("Server stoped")
+        self.window.setWindowTitle("LNReader: Remote service (stoped)")
         raise Exception("Kill Websocket server")
