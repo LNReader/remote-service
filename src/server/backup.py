@@ -85,7 +85,10 @@ class BackupHandler:
 
     def metadata(self):
         meta = []
+
+        # (filePath, encoding)
         paths = {
+            'Version': (slash_join(self.backup_dir, 'Data', 'Version.json'), None),
             'Novel': (slash_join(self.backup_dir, 'Data', 'Novel.json'), None),
             'Category': (slash_join(self.backup_dir, 'Data', 'Category.json'), None),
             'NovelCategory': (slash_join(self.backup_dir, 'Data', 'NovelCategory.json'), None),
