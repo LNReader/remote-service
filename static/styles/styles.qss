@@ -1,0 +1,49 @@
+QMainWindow{
+    background-color: -background-;
+}
+
+QScrollArea{
+    background-color: -secondary-;
+    border-radius: 16px;
+}
+
+QPushButton{
+    color: -onprimary-;
+    background-color: -primary-;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+QPushButton::pressed{
+    background-color: -secondary-;
+}
+
+QPushButton::disabled{
+    background-color: -secondary-;
+}
+
+QWidget#form{
+    background-color: -primary-;
+    border-radius : 10px;
+}
+
+QLabel{
+    color: -onTertiary-;
+    border-radius: 10px;
+    background-color: -tertiary-;
+    padding: 0 10px;
+}
+
+QLineEdit{
+    background-color: -secondary-;
+    color: -onSecondary-;
+    border-radius: 10px;
+    padding-left: 10px;
+}
+
+QTextBrowser{
+    background-color: -secondary-;
+    color: -onSecondary-;
+    padding-left: 10px;
+    border-radius: 10px;
+}
