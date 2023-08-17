@@ -8,7 +8,7 @@ class BackupRequestPackage:
         self.content = json_obj.get('content')
         self.encoding = json_obj.get('encoding')    # None, base64, utf-8
         if self.encoding == 'base64':
-            self.path = slash_join(backup_dir, 'Images', json_obj.get('relative_path'))
+            self.path = slash_join(backup_dir, 'Download', json_obj.get('relative_path'))
         else:
             self.path = slash_join(backup_dir, 'Data', json_obj.get('relative_path'))
         self.dir = os.path.dirname(self.path)
@@ -94,9 +94,7 @@ class BackupHandler:
             'NovelCategory': (slash_join(self.backup_dir, 'Data', 'NovelCategory.json'), None),
             'Setting': (slash_join(self.backup_dir, 'Data', 'Setting.json'), None),
             'Chapter': (slash_join(self.backup_dir, 'Data', 'Chapters'), None),
-            'Download': (slash_join(self.backup_dir, 'Data', 'Downloads'), 'utf-8'),
-            'Plugin': (slash_join(self.backup_dir, 'Data', 'Plugins'), 'utf-8'),
-            'Image': (slash_join(self.backup_dir, 'Images'), 'base64'),
+            'Download': (slash_join(self.backup_dir, 'Download'), 'base64'),
             'Theme':(slash_join(self.backup_dir, 'Data', 'Theme.json'), None)
         }
 

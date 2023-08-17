@@ -1,6 +1,4 @@
 from PyQt6 import QtCore, QtWidgets
-from subprocess import check_output
-import re
 import os
 
 class Form(QtWidgets.QWidget):
@@ -15,6 +13,7 @@ class Form(QtWidgets.QWidget):
         self.address_inp = QtWidgets.QLineEdit(self)
         self.address_inp.setGeometry(QtCore.QRect(120, 20, 221, 31))
         self.address_inp.setObjectName("address_inp")
+        self.address_inp.setPlaceholderText("IPv4 address of this device")
 
         self.port_label = QtWidgets.QLabel(self)
         self.port_label.setGeometry(QtCore.QRect(20, 70, 81, 31))
@@ -45,20 +44,16 @@ class Form(QtWidgets.QWidget):
         self.start_btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
 
         self.port_inp.setText("8000")
-        if self.parent().config.get("folder"):
-            self.folder_inp.setText(self.parent().config.get("folder"))
-        else:
-            path = os.path.join(os.path.expanduser('~'), 'Downloads')
-            self.folder_inp.setText(path)
-            self.parent().config["folder"] = path
-            self.parent().update_config()
 
     def valid(self):
         host, port, folder = self.address_inp.text(), self.port_inp.text(), self.folder_inp.text()
+        if not (host and port and folder):
+            raise Exception("You have to fill all inputs")
+        if os.path.exists(os.path.join(folder, 'metadata.json')):
+            raise Exception("Not a valid folder, it should be the parent of this folder")
         return host, port, folder
     
     def browser_folder(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(self)
         self.folder_inp.setText(path)
-        self.parent().config["folder"] = path
-        self.parent().update_config()
+
