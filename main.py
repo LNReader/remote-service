@@ -30,8 +30,11 @@ class MainWindow(QMainWindow):
         self.show()
     
     def start_server(self):
-        host, port, folder = self.form.valid()
-
+        try:
+            host, port, folder = self.form.valid()
+        except Exception as e:
+            self.log(e)
+            return
         self.server = WebSocketServer(host, int(port), folder, self)
         self.server.start()
         self.app.aboutToQuit.connect(self.server.shutdown)
