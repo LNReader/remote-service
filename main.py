@@ -44,7 +44,6 @@ class MainWindow(QMainWindow):
             return
         self.httpd = HTTPServer((ip, port), Server)
         self.server_thread = Thread(target=self.httpd.serve_forever)
-        self.server_thread.daemon = True
         self.server_thread.start()
         self.setWindowTitle(f"LNReader: Remote service ({host})")
         

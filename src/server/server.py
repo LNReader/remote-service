@@ -1,4 +1,5 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
+import mimetypes
 import os
 import json
 import cgi
@@ -8,7 +9,6 @@ def get_workspace():
     config = json.loads(open(os.path.join(app_dir, 'config.json')).read())
     return config['workspace']
 class Server(BaseHTTPRequestHandler):
-
     def _header(self, headers = {}):
         self.send_response(200)
         for key in headers:
@@ -17,21 +17,24 @@ class Server(BaseHTTPRequestHandler):
 
     def do_GET(self):
         if self.path == '/':
-            self._header({
-                'Content-Type': 'application/json'
-            })
+            self._header()
             data = {
                 'name': 'LNReader'
             }
             self.wfile.write(bytes(json.dumps(data), 'utf-8'))
-            pass
         elif self.path.startswith('/download'):
             try:
                 file_path = os.path.join(get_workspace(), self.path.removeprefix('/download/'))
-                self._header()
-                with open(file_path, 'rb') as f:
-                    self.wfile.write(f.read())
-                    f.close()
+                f = open(file_path, 'rb')
+                content_length = os.fstat(f.fileno()).st_size
+                content_type = mimetypes.guess_type(file_path)[0]
+                self._header({
+                    'Content-Type': content_type,
+                    'Content-Length': content_length
+                })
+                self.wfile.write(f.read())
+                self.wfile.flush()
+                f.close()
             except Exception as e:
                 print('ERROR:', e)
                 self.send_response(400)
@@ -90,12 +93,11 @@ class Server(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(bytes(str(e), 'utf-8'))
 
-
-# if __name__ == '__main__':
-#     httpd = HTTPServer(('localhost', 8000), Server)
-#     print("Start server - localhost:8000")
-#     try:
-#         httpd.serve_forever()
-#     except KeyboardInterrupt:
-#         pass
-#     httpd.server_close()
+if __name__ == '__main__':
+    httpd = HTTPServer(('localhost', 8000), Server)
+    print("Start server - localhost:8000")
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    httpd.server_close()
