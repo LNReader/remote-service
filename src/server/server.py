@@ -1,67 +1,101 @@
-import threading
-import websockets
-import asyncio
-import json
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import os
+import json
+import cgi
 
-from .backup import BackupHandler
+def get_workspace():
+    app_dir = os.path.join(os.path.expanduser('~'), '.LNReader')
+    config = json.loads(open(os.path.join(app_dir, 'config.json')).read())
+    return config['workspace']
+class Server(BaseHTTPRequestHandler):
 
-class WebSocketServer(threading.Thread, BackupHandler):
-    def __init__(self, host, port, app_dir, window):
-        super().__init__()
-        self.host = host
-        self.port = port
-        self.backup_dir = os.path.join(app_dir, 'Backup').replace('\\', '/')
-        os.makedirs(self.backup_dir, exist_ok=True)
-        self.window = window
+    def _header(self, headers = {}):
+        self.send_response(200)
+        for key in headers:
+            self.send_header(key, headers[key])
+        self.end_headers()
 
-        # this will avoid program re-read metadata file for each request
-        self.get_metadata()
-        self.map_handler = {
-            'Backup': self.backup,
-            'Restore': self.restore,
-            'OldRestore': self.old_restore,
-            'Metadata': self.metadata,
-        }
+    def do_GET(self):
+        if self.path == '/':
+            self._header({
+                'Content-Type': 'application/json'
+            })
+            data = {
+                'name': 'LNReader'
+            }
+            self.wfile.write(bytes(json.dumps(data), 'utf-8'))
+            pass
+        elif self.path.startswith('/download'):
+            try:
+                file_path = os.path.join(get_workspace(), self.path.removeprefix('/download/'))
+                self._header()
+                with open(file_path, 'rb') as f:
+                    self.wfile.write(f.read())
+                    f.close()
+            except Exception as e:
+                print('ERROR:', e)
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(bytes(str(e), 'utf-8'))
 
-    def get_metadata(self):
-        metadata_path = os.path.join(self.backup_dir, 'metadata.json')
-        if os.path.exists(metadata_path):
-            with open(metadata_path, 'r', encoding='utf-8') as f:
-                self.meta = json.loads(f.read())
-
-    async def handler(self, websocket):
+    def do_POST(self):
         try:
-            async for message in websocket:
-                json_obj = json.loads(message)
-                handler_type = json_obj.get('type')
-                handler = self.map_handler.get(handler_type)
-                if handler:
-                    if handler_type == 'Metadata':
-                        handler()
-                        res = None
-                    else:
-                        res = handler(json_obj.get('data'))
+            form = cgi.FieldStorage( fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD':'POST', 'CONTENT_TYPE':self.headers['Content-Type'], })
+            keys = form.keys()
+            metadata, media = {}, None
+            if 'metadata' in keys:
+                metadata = json.loads(form.getvalue('metadata'))
+            else:
+                raise Exception('No metedata provided')
+            if 'media' in keys:
+                media = form['media']
+
+            folder_path = os.path.join(get_workspace(), '/'.join(metadata['folderTree']))
+
+            if self.path == '/list':
+                if os.path.exists(folder_path):
+                    data = os.listdir(folder_path)
                 else:
-                    res = {
-                        "success": False,
-                        "message": "Unsupported handler"
-                    }
-                if res: await websocket.send(json.dumps(res))
+                    data = []
+                self._header({
+                    'Content-Type': 'application/json'
+                })
+                self.wfile.write(bytes(json.dumps(data), 'utf-8'))
+            elif self.path == '/exists':
+                file_path = os.path.join(folder_path, metadata['name'])
+                data = {
+                    'exists': os.path.exists(file_path)
+                }
+                self._header({
+                    'Content-Type': 'application/json'
+                })
+                self.wfile.write(bytes(json.dumps(data), 'utf-8'))
+            elif self.path == '/upload':
+                if media != None:
+                    file_path = os.path.join(folder_path, metadata['name'])
+                    os.makedirs(name=folder_path, exist_ok=True)
+                    if metadata['mimeType'] == 'application/json':
+                        with open(file_path, 'w', encoding="utf-8") as f:
+                            f.write(media.file.read())
+                    else:
+                        with open(file_path, 'wb')as f:
+                            f.write(media.file.read())
+                    self._header()
+                else:
+                    raise Exception('No file provided')
+            
         except Exception as e:
-            self.window.log(e)
-            self.shutdown()
+            print('ERROR:', e)
+            self.send_response(400)
+            self.end_headers()
+            self.wfile.write(bytes(str(e), 'utf-8'))
 
-    async def forever(self):
-        async with websockets.serve(self.handler, self.host, self.port, max_size=2**24):
-            self.window.log(f'Server started at ws://{self.host}:{self.port}')
-            self.window.setWindowTitle("LNReader: Remote service (started)")
-            await asyncio.Future()
 
-    def run(self):
-        asyncio.run(self.forever())
-
-    def shutdown(self):
-        self.window.log("Server stoped")
-        self.window.setWindowTitle("LNReader: Remote service (stoped)")
-        raise Exception("Kill Websocket server")
+# if __name__ == '__main__':
+#     httpd = HTTPServer(('localhost', 8000), Server)
+#     print("Start server - localhost:8000")
+#     try:
+#         httpd.serve_forever()
+#     except KeyboardInterrupt:
+#         pass
+#     httpd.server_close()
