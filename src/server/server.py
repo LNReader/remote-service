@@ -3,6 +3,7 @@ import mimetypes
 import os
 import json
 import cgi
+import sys
 
 def get_workspace():
     app_dir = os.path.join(os.path.expanduser('~'), '.LNReader')
@@ -94,10 +95,19 @@ class Server(BaseHTTPRequestHandler):
             self.wfile.write(bytes(str(e), 'utf-8'))
 
 if __name__ == '__main__':
-    httpd = HTTPServer(('localhost', 8000), Server)
-    print("Start server - localhost:8000")
     try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        pass
-    httpd.server_close()
+        if len(sys.argv) == 1:
+            host = 'localhost'
+            port = 8000
+        else: 
+            host, port = sys.argv[1], sys.argv[2]
+            port = int(port)
+        httpd = HTTPServer((host, port), Server)
+        print(f"Start server - {host}:{port}")
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        httpd.server_close()
+    except:
+        print('python server.py [host] [port]')
