@@ -7,10 +7,11 @@ from PyQt6.QtWidgets import (
 
 import os
 import json
+from http.server import HTTPServer
+from threading import Thread
 
-from src.server.server import WebSocketServer
+from src.server.server import Server
 from src.components.form import Form
-from src.components.view import View
 
 BASE_DIR = os.path.dirname(__file__)
 
@@ -18,51 +19,53 @@ class MainWindow(QMainWindow):
     def __init__(self, app: QApplication):
         super().__init__()
         self.app = app
-        self._width = 720
-        self._height = 480
+        self._width = 600
+        self._height = 200
         self.setWindowIcon(QIcon(os.path.join(BASE_DIR, 'static/images/icon.png')))
         self.setWindowTitle("LNReader: Remote service (not started)")
         self.setFixedSize(QSize(self._width, self._height))
         self.load_config()
-        self.form = Form(self, 90, 300, 560, 181)
-        self.view = View(self, 20, 20, self._width - 20*2, 270)
+        self.form = Form(self, 20, 20, 560, 180)
         self.form.start_btn.clicked.connect(self.start_server)
         self.show()
     
     def start_server(self):
         try:
-            host, port, folder = self.form.valid()
+            host, workspace = self.form.valid()
+            ip, port = host, 80
+            if ':' in host:
+                ip, port_str = host.split(':')
+                port = int(port_str)
+            self.config['host'] = host
+            self.config['workspace'] = workspace
+            self.update_config()
         except Exception as e:
-            self.log(e)
+            print('ERROR', e)
             return
-        self.server = WebSocketServer(host, int(port), folder, self)
-        self.server.start()
-        self.app.aboutToQuit.connect(self.server.shutdown)
+        self.httpd = HTTPServer((ip, port), Server)
+        self.server_thread = Thread(target=self.httpd.serve_forever)
+        self.server_thread.start()
+        self.setWindowTitle(f"LNReader: Remote service ({host})")
         
+        self.app.aboutToQuit.connect(self.httpd.shutdown)
         self.form.start_btn.setDisabled(True)
-        self.form.address_inp.setDisabled(True)
-        self.form.port_inp.setDisabled(True)
+        self.form.host_inp.setDisabled(True)
         self.form.browse_btn.setDisabled(True)
-
-    def log(self, message):
-        self.view.text.insertHtml(f'<p>{message}</p><br>')
-        self.view.text.verticalScrollBar().setValue(self.view.text.verticalScrollBar().maximum())
 
     # %user_dir%/.LNReader/config.json
     def load_config(self):
-        self.config_dir = os.path.join(os.path.expanduser('~'), '.LNReader')
-        if not os.path.exists(self.config_dir):
-            os.mkdir(self.config_dir)
-        self.config_path = os.path.join(os.path.expanduser('~'), '.LNReader', 'config.json')
+        self.app_dir = os.path.join(os.path.expanduser('~'), '.LNReader')
+        if not os.path.exists(self.app_dir):
+            os.mkdir(self.app_dir)
+        self.config_path = os.path.join(self.app_dir, 'config.json')
         if not os.path.exists(self.config_path):
-            with open(self.config_path, 'w') as f:
-                f.write(json.dumps({}))
-        with open(self.config_path, 'r') as f:
-            self.config = json.loads(f.read())
+            open(self.config_path, 'w').write(
+                json.dumps({'workspace': self.app_dir})
+            )
+        self.config = json.loads(open(self.config_path, 'r').read())
 
     def update_config(self):
-        with open(self.config_path, 'w') as f:
-            f.write(json.dumps(self.config))
+        open(self.config_path, 'w').write(json.dumps(self.config))
 
 app = QApplication([])
 

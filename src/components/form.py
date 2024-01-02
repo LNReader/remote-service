@@ -1,38 +1,31 @@
 from PyQt6 import QtCore, QtWidgets
-import os
 
 class Form(QtWidgets.QWidget):
     def __init__(self, parent, x, y, w, h) -> None:
         super().__init__(parent)
         self.setGeometry(QtCore.QRect(x, y, w, h))
         self.setObjectName("form")
-        self.address_label = QtWidgets.QLabel(self)
-        self.address_label.setGeometry(QtCore.QRect(20, 20, 81, 31))
-        self.address_label.setObjectName("address_label")
-        self.address_label.setText("Address")
-        self.address_inp = QtWidgets.QLineEdit(self)
-        self.address_inp.setGeometry(QtCore.QRect(120, 20, 221, 31))
-        self.address_inp.setObjectName("address_inp")
-        self.address_inp.setPlaceholderText("IPv4 address of this device")
+        self.host_label = QtWidgets.QLabel(self)
+        self.host_label.setGeometry(QtCore.QRect(20, 20, 81, 31))
+        self.host_label.setObjectName("host_label")
+        self.host_label.setText("Host")
+        self.host_inp = QtWidgets.QLineEdit(self)
+        self.host_inp.setGeometry(QtCore.QRect(120, 20, 221, 31))
+        self.host_inp.setObjectName("host_inp")
+        self.host_inp.setPlaceholderText("192.168.10.17:8000")
+        self.host_inp.setText(parent.config.get('host') or '')
 
-        self.port_label = QtWidgets.QLabel(self)
-        self.port_label.setGeometry(QtCore.QRect(20, 70, 81, 31))
-        self.port_label.setObjectName("port_label")
-        self.port_label.setText("Port")
-        self.port_inp = QtWidgets.QLineEdit(self)
-        self.port_inp.setGeometry(QtCore.QRect(120, 70, 221, 31))
-        self.port_inp.setObjectName("port_inp")
-
-        self.folder_laber = QtWidgets.QLabel(self)
-        self.folder_laber.setGeometry(QtCore.QRect(20, 120, 81, 31))
-        self.folder_laber.setObjectName("folder_laber")
-        self.folder_laber.setText("Folder")
-        self.folder_inp = QtWidgets.QLineEdit(self)
-        self.folder_inp.setGeometry(QtCore.QRect(120, 120, 221, 31))
-        self.folder_inp.setObjectName("folder_inp")
-        self.folder_inp.setDisabled(True)
+        self.workspace_laber = QtWidgets.QLabel(self)
+        self.workspace_laber.setGeometry(QtCore.QRect(20, 100, 81, 31))
+        self.workspace_laber.setObjectName("workspace_laber")
+        self.workspace_laber.setText("Workspace")
+        self.workspace_inp = QtWidgets.QLineEdit(self)
+        self.workspace_inp.setGeometry(QtCore.QRect(120, 100, 221, 31))
+        self.workspace_inp.setObjectName("workspace_inp")
+        self.workspace_inp.setDisabled(True)
+        self.workspace_inp.setText(parent.config.get('workspace'))
         self.browse_btn = QtWidgets.QPushButton(self)
-        self.browse_btn.setGeometry(QtCore.QRect(350, 120, 60, 31))
+        self.browse_btn.setGeometry(QtCore.QRect(350, 100, 60, 31))
         self.browse_btn.setText("Browse")
         self.browse_btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
         self.browse_btn.clicked.connect(self.browser_folder)
@@ -43,17 +36,13 @@ class Form(QtWidgets.QWidget):
         self.start_btn.setText("Start")
         self.start_btn.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
 
-        self.port_inp.setText("8000")
-
     def valid(self):
-        host, port, folder = self.address_inp.text(), self.port_inp.text(), self.folder_inp.text()
-        if not (host and port and folder):
+        host, folder = self.host_inp.text(), self.workspace_inp.text()
+        if not (host and folder):
             raise Exception("You have to fill all inputs")
-        if os.path.exists(os.path.join(folder, 'metadata.json')):
-            raise Exception("Not a valid folder, it should be the parent of this folder")
-        return host, port, folder
-    
+        return host, folder
+
     def browser_folder(self):
         path = QtWidgets.QFileDialog.getExistingDirectory(self)
-        self.folder_inp.setText(path)
+        self.workspace_inp.setText(path)
 
