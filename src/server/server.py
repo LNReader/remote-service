@@ -7,6 +7,7 @@ an example for this url : /upload/nyagami.backup&&data.zip or /upload/nyagami.ba
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 from flask import Flask, request, send_file
 
@@ -26,7 +27,7 @@ def root() -> dict[str, str]:
 
 
 @app.post("/upload/<path:path>&&<path:filename>")
-def upload(path: str, filename: str):
+def upload(path: str, filename: str) -> dict[str, Any]:
     file_path = Path(get_workspace()) / path / filename
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
