@@ -1,116 +1,65 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import mimetypes
-import os
-import json
-import cgi
+""" 
+POST: /upload/<path&&to&&file.zip> -> write data to <path/to/file.zip>
+GET: /download/<path&&to&&/file.zip> -> read .zip file from <path/to/file.zip>
+also get_workspace(): is the folder path which includes backup folders <name>.backup
+an example for this url : /upload/nyagami.backup&&data.zip or /upload/nyagami.backup&&download.zip
+"""
 import sys
+import json
+from pathlib import Path
+from typing import Annotated
+
+import uvicorn
+from fastapi import FastAPI, File
+from fastapi.responses import FileResponse
+
+app = FastAPI()
+
 
 def get_workspace():
-    app_dir = os.path.join(os.path.expanduser('~'), '.LNReader')
-    config = json.loads(open(os.path.join(app_dir, 'config.json')).read())
-    return config['workspace']
-class Server(BaseHTTPRequestHandler):
-    def _header(self, headers = {}):
-        self.send_response(200)
-        for key in headers:
-            self.send_header(key, headers[key])
-        self.end_headers()
+    config_path = Path.home() / ".LNReader" / "config.json"
+    with config_path.open("r", encoding="utf-8") as f:
+        config = json.load(f)
+    return config["workspace"]
 
-    def do_GET(self):
-        if self.path == '/':
-            self._header()
-            data = {
-                'name': 'LNReader'
-            }
-            self.wfile.write(bytes(json.dumps(data), 'utf-8'))
-        elif self.path.startswith('/download'):
-            try:
-                file_path = os.path.join(get_workspace(), self.path.removeprefix('/download/'))
-                f = open(file_path, 'rb')
-                content_length = os.fstat(f.fileno()).st_size
-                content_type = mimetypes.guess_type(file_path)[0]
-                self._header({
-                    'Content-Type': content_type,
-                    'Content-Length': content_length
-                })
-                self.wfile.write(f.read())
-                self.wfile.flush()
-                f.close()
-            except Exception as e:
-                print('ERROR:', e)
-                self.send_response(400)
-                self.end_headers()
-                self.wfile.write(bytes(str(e), 'utf-8'))
 
-    def do_POST(self):
-        try:
-            form = cgi.FieldStorage( fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD':'POST', 'CONTENT_TYPE':self.headers['Content-Type'], })
-            keys = form.keys()
-            metadata, media = {}, None
-            if 'metadata' in keys:
-                metadata = json.loads(form.getvalue('metadata'))
-            else:
-                raise Exception('No metedata provided')
-            if 'media' in keys:
-                media = form['media']
+@app.get("/")
+async def root():
+    return {"name": "LNReader"}
 
-            folder_path = os.path.join(get_workspace(), '/'.join(metadata['folderTree']))
 
-            if self.path == '/list':
-                if os.path.exists(folder_path):
-                    data = os.listdir(folder_path)
-                else:
-                    data = []
-                self._header({
-                    'Content-Type': 'application/json'
-                })
-                self.wfile.write(bytes(json.dumps(data), 'utf-8'))
-            elif self.path == '/exists':
-                file_path = os.path.join(folder_path, metadata['name'])
-                data = {
-                    'exists': os.path.exists(file_path)
-                }
-                self._header({
-                    'Content-Type': 'application/json'
-                })
-                self.wfile.write(bytes(json.dumps(data), 'utf-8'))
-            elif self.path == '/upload':
-                if media != None:
-                    file_path = os.path.join(folder_path, metadata['name'])
-                    os.makedirs(name=folder_path, exist_ok=True)
-                    if metadata['mimeType'] == 'application/json':
-                        with open(file_path, 'w', encoding="utf-8") as f:
-                            f.write(media.file.read())
-                    else:
-                        with open(file_path, 'wb')as f:
-                            f.write(media.file.read())
-                    self._header()
-                else:
-                    raise Exception('No file provided')
-            
-        except Exception as e:
-            print('ERROR:', e)
-            self.send_response(400)
-            self.end_headers()
-            self.wfile.write(bytes(str(e), 'utf-8'))
+@app.post("/upload/{path}&&{filename}")
+async def upload(path: str, filename: str, file: Annotated[bytes, File()]):
+    file_path = Path(get_workspace()) / path / filename
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    with file_path.open("wb") as f:
+        f.write(file)
+
+    return {"path": path, "filename": filename, "size": len(file)}
+
+
+@app.get("/download/{path}&&{filename}")
+async def download(path: str, filename: str):
+    file_path = Path(get_workspace()) / path / filename
+    if not file_path.exists():
+        raise Exception("File not found")
+
+    return FileResponse(file_path)
+
 
 def main():
     try:
         if len(sys.argv) == 1:
-            host = 'localhost'
+            host = "localhost"
             port = 8000
-        else: 
+        else:
             host, port = sys.argv[1], sys.argv[2]
             port = int(port)
-        httpd = HTTPServer((host, port), Server)
         print(f"Start server - {host}:{port}")
-        try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            pass
-        httpd.server_close()
-    except:
-        print('python server.py [host] [port]')
+        uvicorn.run(app, host=host, port=port)
+    except Exception:
+        print("python server.py [host] [port]")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
