@@ -7,13 +7,10 @@ an example for this url : /upload/nyagami.backup&&data.zip or /upload/nyagami.ba
 import json
 import sys
 from pathlib import Path
-from typing import Any
 
-import uvicorn
-from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse
+from flask import Flask, request, send_file
 
-app = FastAPI()
+app = Flask(__name__)
 
 
 def get_workspace() -> Path:
@@ -23,34 +20,34 @@ def get_workspace() -> Path:
     return Path(config["workspace"])
 
 
-@app.get("/")
-async def root() -> dict[str, str]:
+@app.route("/")
+def root() -> dict[str, str]:
     return {"name": "LNReader"}
 
 
-@app.post("/upload/{path}&&{filename}")
-async def upload(path: str, filename: str, request: Request) -> dict[str, Any]:
+@app.post("/upload/<path:path>&&<path:filename>")
+def upload(path: str, filename: str):
     file_path = Path(get_workspace()) / path / filename
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
-    file = await request.body()
+    file = request.get_data()
     with file_path.open("wb") as f:
         f.write(file)
 
     return {"path": path, "filename": filename, "size": len(file)}
 
 
-@app.get("/download/{path}&&{filename}")
-async def download(path: str, filename: str) -> FileResponse:
+@app.get("/download/<path:path>&&<path:filename>")
+def download(path: str, filename: str):
     file_path = Path(get_workspace()) / path / filename
     if not file_path.exists():
         raise Exception("File not found")
 
-    return FileResponse(file_path)
+    return send_file(file_path)
 
 
 @app.get("/list")
-async def list() -> list[str]:
+def list() -> list[str]:
     """list all backups"""
     workspace = Path(get_workspace())
     return [str(folder.name) for folder in workspace.iterdir() if folder.is_dir()]
@@ -65,7 +62,7 @@ def main():
             host, port = sys.argv[1], sys.argv[2]
             port = int(port)
         print(f"Start server - {host}:{port}")
-        uvicorn.run(app, host=host, port=port)
+        app.run(host=host, port=port)
     except Exception:
         print("python server.py [host] [port]")
 
