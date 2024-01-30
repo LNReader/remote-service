@@ -4,10 +4,10 @@ GET: /download/<path&&to&&/file.zip> -> read .zip file from <path/to/file.zip>
 also get_workspace(): is the folder path which includes backup folders <name>.backup
 an example for this url : /upload/nyagami.backup&&data.zip or /upload/nyagami.backup&&download.zip
 """
-import sys
 import json
+import sys
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import uvicorn
 from fastapi import FastAPI, File
@@ -16,20 +16,22 @@ from fastapi.responses import FileResponse
 app = FastAPI()
 
 
-def get_workspace():
+def get_workspace() -> Path:
     config_path = Path.home() / ".LNReader" / "config.json"
     with config_path.open("r", encoding="utf-8") as f:
         config = json.load(f)
-    return config["workspace"]
+    return Path(config["workspace"])
 
 
 @app.get("/")
-async def root():
+async def root() -> dict[str, str]:
     return {"name": "LNReader"}
 
 
 @app.post("/upload/{path}&&{filename}")
-async def upload(path: str, filename: str, file: Annotated[bytes, File()]):
+async def upload(
+    path: str, filename: str, file: Annotated[bytes, File()]
+) -> dict[str, Any]:
     file_path = Path(get_workspace()) / path / filename
     file_path.parent.mkdir(parents=True, exist_ok=True)
     with file_path.open("wb") as f:
@@ -39,12 +41,19 @@ async def upload(path: str, filename: str, file: Annotated[bytes, File()]):
 
 
 @app.get("/download/{path}&&{filename}")
-async def download(path: str, filename: str):
+async def download(path: str, filename: str) -> FileResponse:
     file_path = Path(get_workspace()) / path / filename
     if not file_path.exists():
         raise Exception("File not found")
 
     return FileResponse(file_path)
+
+
+@app.get("/list")
+async def list() -> list[str]:
+    """list all backups"""
+    workspace = Path(get_workspace())
+    return [str(folder.name) for folder in workspace.iterdir() if folder.is_dir()]
 
 
 def main():
