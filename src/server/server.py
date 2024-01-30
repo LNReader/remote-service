@@ -94,7 +94,7 @@ class Server(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(bytes(str(e), 'utf-8'))
 
-if __name__ == '__main__':
+def main():
     try:
         if len(sys.argv) == 1:
             host = 'localhost'
@@ -111,3 +111,6 @@ if __name__ == '__main__':
         httpd.server_close()
     except:
         print('python server.py [host] [port]')
+
+if __name__ == '__main__':
+    main()

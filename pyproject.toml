@@ -1,0 +1,19 @@
+[project]
+name = "remote-service"
+version = "0.1.0"
+description = "Default template for PDM package"
+authors = [{ name = "LNReader" }]
+dependencies = [
+    "pyinstaller>=6.3.0",
+    "pyqt6>=6.6.1",
+]
+requires-python = "==3.12.*"
+readme = "README.md"
+license = { text = "MIT" }
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.scripts]
+server = {call = "src.server.server:main"}
+build = "pyinstaller main.spec"
