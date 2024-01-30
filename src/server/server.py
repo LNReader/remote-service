@@ -7,10 +7,10 @@ an example for this url : /upload/nyagami.backup&&data.zip or /upload/nyagami.ba
 import json
 import sys
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Any
 
 import uvicorn
-from fastapi import FastAPI, File
+from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 
 app = FastAPI()
@@ -29,11 +29,11 @@ async def root() -> dict[str, str]:
 
 
 @app.post("/upload/{path}&&{filename}")
-async def upload(
-    path: str, filename: str, file: Annotated[bytes, File()]
-) -> dict[str, Any]:
+async def upload(path: str, filename: str, request: Request) -> dict[str, Any]:
     file_path = Path(get_workspace()) / path / filename
     file_path.parent.mkdir(parents=True, exist_ok=True)
+
+    file = await request.body()
     with file_path.open("wb") as f:
         f.write(file)
 
