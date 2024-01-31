@@ -38,9 +38,9 @@ def upload(path: str, filename: str) -> dict[str, Any]:
     return {"path": path, "filename": filename, "size": len(file)}
 
 
-@app.get("/download/<path:path>&&<path:filename>")
-def download(path: str, filename: str):
-    file_path = Path(get_workspace()) / path / filename
+@app.get("/download/<path:backup_name>&&<path:filename>")
+def download(backup_name: str, filename: str):
+    file_path = Path(get_workspace()) / backup_name/ filename
     if not file_path.exists():
         raise Exception("File not found")
 
