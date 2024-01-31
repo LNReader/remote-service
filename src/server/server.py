@@ -51,7 +51,7 @@ def download(path: str, filename: str):
 def list() -> list[str]:
     """list all backups"""
     workspace = Path(get_workspace())
-    return [str(folder.name) for folder in workspace.iterdir() if folder.is_dir()]
+    return [str(folder.name) for folder in workspace.iterdir() if folder.is_dir() and folder.name.endswith('.backup')]
 
 
 def main():
