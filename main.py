@@ -43,10 +43,11 @@ class MainWindow(QMainWindow):
 
         self.server = make_server(ip, port, flask_app)
         self.server_thread = Thread(target=self.server.serve_forever)
+        self.server_thread.daemon = True
         self.server_thread.start()
         self.setWindowTitle(f"LNReader: Remote service ({host})")
 
-        self.app.aboutToQuit.connect(self.server.shutdown)
+        self.app.aboutToQuit.connect(self.stop_server)
         self.form.start_btn.setDisabled(True)
         self.form.host_inp.setDisabled(True)
         self.form.browse_btn.setDisabled(True)
@@ -63,6 +64,9 @@ class MainWindow(QMainWindow):
 
     def update_config(self):
         open(self.config_path, "w").write(json.dumps(self.config))
+
+    def stop_server(self):
+        exit(0)
 
 
 app = QApplication([])
