@@ -28,7 +28,7 @@ def root() -> dict[str, str]:
 
 @app.post("/upload/<path:backup_name>&&<path:filename>")
 def upload(backup_name: str, filename: str) -> dict[str, Any]:
-    file_path = Path(get_workspace()) / backup_name/ filename
+    file_path = Path(get_workspace()) / backup_name / filename
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     file = request.get_data()
@@ -40,7 +40,7 @@ def upload(backup_name: str, filename: str) -> dict[str, Any]:
 
 @app.get("/download/<path:backup_name>&&<path:filename>")
 def download(backup_name: str, filename: str):
-    file_path = Path(get_workspace()) / backup_name/ filename
+    file_path = Path(get_workspace()) / backup_name / filename
     if not file_path.exists():
         raise Exception("File not found")
 
@@ -51,7 +51,11 @@ def download(backup_name: str, filename: str):
 def list() -> list[str]:
     """list all backups"""
     workspace = Path(get_workspace())
-    return [str(folder.name) for folder in workspace.iterdir() if folder.is_dir() and folder.name.endswith('.backup')]
+    return [
+        str(folder.name)
+        for folder in workspace.iterdir()
+        if folder.is_dir() and folder.name.endswith(".backup")
+    ]
 
 
 def main():
