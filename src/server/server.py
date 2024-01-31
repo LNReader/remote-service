@@ -26,16 +26,16 @@ def root() -> dict[str, str]:
     return {"name": "LNReader"}
 
 
-@app.post("/upload/<path:path>&&<path:filename>")
-def upload(path: str, filename: str) -> dict[str, Any]:
-    file_path = Path(get_workspace()) / path / filename
+@app.post("/upload/<path:backup_name>&&<path:filename>")
+def upload(backup_name: str, filename: str) -> dict[str, Any]:
+    file_path = Path(get_workspace()) / backup_name/ filename
     file_path.parent.mkdir(parents=True, exist_ok=True)
 
     file = request.get_data()
     with file_path.open("wb") as f:
         f.write(file)
 
-    return {"path": path, "filename": filename, "size": len(file)}
+    return {"backup_name": backup_name, "filename": filename, "size": len(file)}
 
 
 @app.get("/download/<path:backup_name>&&<path:filename>")
