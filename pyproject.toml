@@ -19,6 +19,7 @@ distribution = false
 server = { call = "src.server.server:main" }
 build = "pyinstaller main.spec"
 start = "flask --app src.server.server run --debug"
+gui = "python main.py"
 
 [tool.pyright]
 pythonVersion = "3.10"
