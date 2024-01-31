@@ -1,0 +1,27 @@
+[project]
+name = "remote-service"
+version = "0.1.0"
+description = "LNReader Remote Service"
+authors = [{ name = "LNReader" }]
+dependencies = [
+    "pyinstaller>=6.3.0",
+    "pyqt6>=6.6.1",
+    "flask>=3.0.1",
+]
+requires-python = ">=3.10,<3.13"
+readme = "README.md"
+license = { text = "MIT" }
+
+[tool.pdm]
+distribution = false
+
+[tool.pdm.scripts]
+server = { call = "src.server.server:main" }
+build = "pyinstaller main.spec"
+start = "flask --app src.server.server run --debug"
+gui = "python main.py"
+
+[tool.pyright]
+pythonVersion = "3.10"
+pythonPlatform = "All"
+typeCheckingMode = "basic"
