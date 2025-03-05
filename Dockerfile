@@ -28,9 +28,9 @@ COPY . .
 RUN pdm add gunicorn
 
 # Create non-root user
-RUN useradd -m myuser && \
-    chown -R myuser:myuser /app
-USER myuser
+RUN useradd -m lnreader && \
+    chown -R lnreader:lnreader /app
+USER lnreader
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
