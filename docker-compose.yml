@@ -1,0 +1,23 @@
+services:
+  web:
+    build: .
+    volumes:
+      - ~/.LNReader:/home/myuser/.LNReader
+    environment:
+      - HOST_PORT=8000
+      - HOST_IP=0.0.0.0
+      - MAX_WORKERS=4
+      - TIMEOUT=120
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - web
+    restart: unless-stopped
