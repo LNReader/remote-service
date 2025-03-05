@@ -19,3 +19,21 @@
 ## Example
 
 - [How to backup and restore (video)](https://youtu.be/-0H-0j8y9OI)
+
+## Docker Deployment
+
+1. Clone project
+2. Configure environment variables (optional):
+   - `PORT`: Port where the service will run (default: 8000)
+   - `STORAGE_PATH`: Local path to store LNReader data (default: ~/.LNReader)
+3. Run with Docker Compose:
+   ```bash
+   docker-compose up -d
+   ```
+4. Open Android App -> Setting -> Backup -> Self Host Backup with `<host>:<PORT>`
+
+Example with custom configuration:
+
+```bash
+PORT=9000 STORAGE_PATH=/path/to/backup docker-compose up -d
+```
