@@ -30,11 +30,9 @@ RUN pdm add gunicorn
 # Create non-root user
 RUN useradd -m lnreader && \
     chown -R lnreader:lnreader /app
+
 USER lnreader
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
-
-# Run with Gunicorn
-CMD ["pdm", "run", "gunicorn", "--config", "docker/gunicorn.conf.py", "src.server.server:app"]

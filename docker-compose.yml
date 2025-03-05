@@ -1,26 +1,18 @@
 services:
   web:
     build: .
+    container_name: lnreader-backup-server
     volumes:
-      - ~/.LNReader:/home/lnreader/.LNReader
+      - ${STORAGE_PATH:-~/.LNReader}:/home/lnreader/.LNReader
     environment:
-      - HOST_PORT=8000
-      - HOST_IP=0.0.0.0
-      - MAX_WORKERS=4
-      - TIMEOUT=120
-    expose:
-      - "8000"
-    restart: unless-stopped
-
-  nginx:
-    image: nginx:alpine
+      - PORT=${PORT:-8000}
     ports:
-      - "${NGINX_PORT:-80}:${NGINX_PORT:-80}"
-    environment:
-      - NGINX_PORT=${NGINX_PORT:-80}
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/templates/default.conf.template
-    command: /bin/sh -c "envsubst '$$NGINX_PORT' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
-    depends_on:
-      - web
+      - "${PORT:-8000}:${PORT:-8000}"
     restart: unless-stopped
+    user: root
+    command: >
+      /bin/sh -c "
+        mkdir -p /home/lnreader/.LNReader &&
+        echo '{\"workspace\": \"/home/lnreader/.LNReader\"}' > /home/lnreader/.LNReader/config.json &&
+        chown -R lnreader:lnreader /home/lnreader/.LNReader &&
+        su -c 'pdm run gunicorn --config docker/gunicorn.conf.py \"src.server.server:app\"' lnreader"
