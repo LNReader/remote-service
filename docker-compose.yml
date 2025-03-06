@@ -1,0 +1,18 @@
+services:
+  web:
+    build: .
+    container_name: lnreader-backup-server
+    volumes:
+      - ${STORAGE_PATH:-~/.LNReader}:/home/lnreader/.LNReader
+    environment:
+      - PORT=${PORT:-8000}
+    ports:
+      - "${PORT:-8000}:${PORT:-8000}"
+    restart: unless-stopped
+    user: root
+    command: >
+      /bin/sh -c "
+        mkdir -p /home/lnreader/.LNReader &&
+        echo '{\"workspace\": \"/home/lnreader/.LNReader\"}' > /home/lnreader/.LNReader/config.json &&
+        chown -R lnreader:lnreader /home/lnreader/.LNReader &&
+        su -c 'pdm run gunicorn --config docker/gunicorn.conf.py \"src.server.server:app\"' lnreader"
